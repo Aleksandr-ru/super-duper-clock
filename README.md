@@ -1,7 +1,7 @@
 Super-duper clock
 =================
 
-Source code for my DIY project.
+Source code for my [DIY project](https://aleksandr.ru/blog/super_puper_chasoidi).
 
 Components list:
 
