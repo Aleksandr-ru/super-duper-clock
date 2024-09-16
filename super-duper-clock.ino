@@ -424,6 +424,7 @@ void draw_air_quality()
     uint16_t co2 = round(m.value);
     const String str = String(co2);
     vfd.writeStr(start + (co2 < 1000 ? 1 : 0), str.c_str());
+    if (co2 < 1000) vfd.writeOneChar(start, VFD_CHAR_SPACE);
   }
   
   if (redraw) {

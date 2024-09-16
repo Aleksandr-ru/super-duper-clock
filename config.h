@@ -6,7 +6,7 @@
  */
 
 #define MIN_BRIGHT_A 50 // analog
-#define MAX_BRIGHT_A 650 // analog
+#define MAX_BRIGHT_A 750 // analog
 #define MIN_BRIGHT_V 0x01 // vfd
 #define MAX_BRIGHT_V 0xf0 // vfd
 #define NIGHT (brightness < 0x02)
