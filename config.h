@@ -19,6 +19,10 @@
 
 #define MAX_YEAR 2099 // rtc
 
+//@see SCD4x Data Sheet section 3.7.1
+#define SCD40_TEMP_OFFSET  7.4f // experimental value in C, default is 4
+#define BMP280_TEMP_OFFSET 2.7f // experimental value in C
+
 #define BMP280_MMHG(x) (x * 0.00750063755419211)
 #define SCD40_CO2(x) constrain(x, 400, 2000)
 

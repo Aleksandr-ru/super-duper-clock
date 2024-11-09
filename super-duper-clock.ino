@@ -138,6 +138,8 @@ void setup()
   delay(500);
 
   scd40.begin(Wire);
+  scd40.stopPeriodicMeasurement();
+  scd40.setTemperatureOffset(SCD40_TEMP_OFFSET);
   scd40.startPeriodicMeasurement();
 
 //  while (!aht20.begin()) {
@@ -162,7 +164,7 @@ void setup()
   if (!rtc.isrunning()) {
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
   }
-  
+
   vfd.writeStr(0, F("  aleksandr.ru  "));
   vfd.brightness(brightness);
   delay(1500);
@@ -178,7 +180,7 @@ void loop()
   btnLeft.update();
   btnCenter.update();
   btnRight.update();
-  
+
   for (uint8_t i = 0; i < INTERVALS; i++) {
     if(millis() - intervals[i].last > intervals[i].step) {
       intervals[i].last = millis();
@@ -189,7 +191,7 @@ void loop()
   if (btnCenter.isClick()) {
     vfd.clear();
     redraw = true;
-    
+
     if (mode < SET_YEAR) mode++;
     else mode = CLOCK;
   }
@@ -215,7 +217,7 @@ void loop()
   }
 
   if (mode == CLOCK) loop_measure();
- 
+
   for (uint8_t i = 0; i < INTERVALS; i++) intervals[i].active = false;
 }
 
@@ -246,7 +248,7 @@ void loop_measure()
       read_scd40();
       if (c.error && (millis() - c.time > 60000)) {
         scd40.stopPeriodicMeasurement();
-        scd40.performFactoryReset();  
+        scd40.performFactoryReset();
         scd40.startPeriodicMeasurement();
       }
     }
@@ -291,7 +293,7 @@ void loop_clock()
   else if (btnLeft.isClick()) {
     vfd.clear();
     redraw = true;
-    
+
     if (scene > TODAY) scene--;
     else scene = AIR;
   }
@@ -320,8 +322,8 @@ void loop_clock()
 
 void draw_clock(DateTime now)
 {
-  if (!now.isValid()) return; 
-  
+  if (!now.isValid()) return;
+
   const uint8_t start = 0;
   bool flag = millis() / 1000 % 2 == 0;
 
@@ -338,8 +340,8 @@ void draw_clock(DateTime now)
 
 void draw_today(DateTime now)
 {
-  if (!now.isValid()) return; 
-  
+  if (!now.isValid()) return;
+
   const uint8_t start = 7;
 
   if (redraw || now.second() == 0) {
@@ -364,14 +366,14 @@ void draw_temp_hum()
   }
   else {
     const uint16_t t = round(abs(tm.value * 10));
-    
+
     if (tm.value < 0) {
       vfd.writeOneChar(start + 0, VFD_CHAR_MINUS);
     }
     else {
       vfd.writeOneChar(start + 0, VFD_CHAR_SPACE);
     }
-  
+
     vfd.writeOneChar(start + 1, VFD_CHAR_SHIFT + t / 100);
     vfd.writeOneChar(start + 2, VFD_CHAR_SHIFT + t / 10 % 10);
     vfd.writeOneChar(start + 3, VFD_CHAR_POINT);
@@ -406,7 +408,7 @@ void draw_pressure()
     const String str = String(round(BMP280_MMHG(m.value)));
     vfd.writeStr(start + 0, str.c_str());
   }
-  
+
   if (redraw) {
     vfd.writeStr(start + 4, dimensions[ PRESSURE ].c_str());
   }
@@ -426,7 +428,7 @@ void draw_air_quality()
     vfd.writeStr(start + (co2 < 1000 ? 1 : 0), str.c_str());
     if (co2 < 1000) vfd.writeOneChar(start, VFD_CHAR_SPACE);
   }
-  
+
   if (redraw) {
     vfd.writeStr(start + 5, dimensions[ AIR ].c_str());
   }
@@ -513,7 +515,7 @@ void loop_set_date()
 {
   DateTime now = rtc.now();
   uint16_t nn = 1;
-  
+
   const uint16_t min_year = String(__DATE__).substring(7).toInt();
 
   if (btnRight.isClick()) {
@@ -606,9 +608,9 @@ void read_bmp280()
 {
   MEASUREMENT& t = measurements[TEMP];
   MEASUREMENT& p = measurements[PRES];
-  
+
   if (bmp280.takeForcedMeasurement()) {
-    measurement_value(t, bmp280.readTemperature());
+    measurement_value(t, bmp280.readTemperature() - BMP280_TEMP_OFFSET);
     measurement_value(p, bmp280.readPressure());
   }
   else {
@@ -621,31 +623,34 @@ void read_scd40()
 {
   MEASUREMENT& h = measurements[HUMI];
   MEASUREMENT& c = measurements[CO2];
-  
+  // MEASUREMENT& t = measurements[TEMP];
+
   uint16_t co2 = 0;
   float temperature = 0.0f;
   float humidity = 0.0f;
   bool is_ready = false;
-  
+
   scd40.getDataReadyFlag(is_ready);
-  
+
   if (is_ready) scd40.readMeasurement(co2, temperature, humidity);
-  
+
   if (is_ready && co2) {
     measurement_value(h, humidity);
     measurement_value(c, (float)co2);
+    // measurement_value(t, temperature);
   }
   else {
     measurement_error(h);
     measurement_error(c);
+    // measurement_error(t);
   }
 }
 
 void correct_scd40()
 {
   MEASUREMENT p = measurements[PRESSURE];
-  
-  // @param ambientPressure Ambient pressure in hPa. 
+
+  // @param ambientPressure Ambient pressure in hPa.
   // Convert value to Pa by: value * 100.
   // uint16_t setAmbientPressure(uint16_t ambientPressure);
   if (!p.error && p.value > 0) {
@@ -663,5 +668,5 @@ void measurement_value(MEASUREMENT &m, float val)
 
 void measurement_error(MEASUREMENT &m)
 {
-  m.error = true; 
+  m.error = true;
 }
